@@ -55,45 +55,53 @@ void* modify_columns(void *arguments) {
     int inorth, isouth, jwest, jeast;
     char neighbor_count;
     const int LDA = thread_params->ncols;
+    char* temp;
+    char* inboard = thread_params->inboard;
+    char* outboard = thread_params->outboard;
+    const int ncols = thread_params->ncols;
+    const int nrows = thread_params->nrows;
     for (int iter = 0; iter < thread_params->num_iterations; iter++) {
         for (j = thread_params->start; j < thread_params->end; j++) {
             jwest = j-1;
             jeast = j+1;
-            if (j == 0) {
-                jwest = thread_params->ncols - 1;
-            } else if (j == thread_params->ncols - 1) {
-                jeast = 0;
-            }
+            if (j == 0) { jwest = ncols - 1; }
+            else if (j == ncols - 1) { jeast = 0; }
 
-            for (i = 0; i < thread_params->nrows; i++) {
+            // inorth = nrows - 1, i = 0, isouth = 1
+            
+            neighbor_count = BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, j) + BOARD (inboard, nrows - 1, jeast) +  
+                BOARD (inboard, 0, jwest) + BOARD (inboard, 0, jeast) + BOARD (inboard, 1, jwest) + BOARD (inboard, 1, j) + 
+                BOARD (inboard, 1, jeast);
+            BOARD(outboard, 0, j) = alivep (neighbor_count, BOARD (inboard, 0, j));
+
+            for (i = 1; i < nrows - 1; i++) {
                 inorth = i-1;
                 isouth = i+1;
-                if (i == 0) {
-                    inorth = thread_params->nrows - 1;
-                } else if (i == thread_params->nrows - 1) {
-                    isouth = 0;
-                }
                 neighbor_count = 
-                    BOARD (thread_params->inboard, inorth, jwest) + 
-                    BOARD (thread_params->inboard, inorth, j) + 
-                    BOARD (thread_params->inboard, inorth, jeast) + 
-                    BOARD (thread_params->inboard, i, jwest) +
-                    BOARD (thread_params->inboard, i, jeast) + 
-                    BOARD (thread_params->inboard, isouth, jwest) +
-                    BOARD (thread_params->inboard, isouth, j) + 
-                    BOARD (thread_params->inboard, isouth, jeast);
+                    BOARD (inboard, inorth, jwest) + 
+                    BOARD (inboard, inorth, j) + 
+                    BOARD (inboard, inorth, jeast) + 
+                    BOARD (inboard, i, jwest) +
+                    BOARD (inboard, i, jeast) + 
+                    BOARD (inboard, isouth, jwest) +
+                    BOARD (inboard, isouth, j) + 
+                    BOARD (inboard, isouth, jeast);
 
-                BOARD(thread_params->outboard, i, j) =
-                    alivep (neighbor_count, BOARD (thread_params->inboard, i, j));
-
+                BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
             }
+
+            neighbor_count = BOARD (inboard, nrows - 2, jwest) + BOARD (inboard, nrows - 2, j) + BOARD (inboard, nrows - 2, jeast) +  
+                BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, jeast) + BOARD (inboard, 0, jwest) + BOARD (inboard, 0, j) + 
+                BOARD (inboard, 0, jeast);
+            BOARD(outboard, nrows - 1, j) = alivep (neighbor_count, BOARD (inboard, nrows - 1, j));
+
         }
         if (DEBUG) {
             printf("Wait\n");
         }
-        char* temp = thread_params->inboard;
-        thread_params->inboard = thread_params->outboard;
-        thread_params->outboard = temp;
+        temp = inboard;
+        inboard = outboard;
+        outboard = temp;
         pthread_barrier_wait(&iteration_barrier);
     }
     return NULL;
