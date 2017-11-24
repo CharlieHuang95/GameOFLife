@@ -12,16 +12,6 @@
 } while(0)
 
 #define BOARD( __board, __i, __j )  (__board[(__i) + LDA*(__j)])
-/*
-#define BOARD_9(__board, __i, __j)  BOARD (inboard, inorth, jwest) + 
-                    BOARD (inboard, inorth, j) + 
-                    BOARD (inboard, inorth, jeast) + 
-                    BOARD (inboard, i, jwest) +
-                    BOARD (inboard, i, jeast) + 
-                    BOARD (inboard, isouth, jwest) +
-                    BOARD (inboard, isouth, j) + 
-                    BOARD (inboard, isouth, jeast);
-*/
 
 /*****************************************************************************
  * Helper function definitions
@@ -43,45 +33,34 @@ game_of_life (char* outboard,
   return game_of_life_parallel (outboard, inboard, nrows, ncols, gens_max);
 }
 
-char*
-game_of_life_parallel (char* outboard, 
-        char* inboard,
-        const int nrows,
-        const int ncols,
-        const int gens_max)
-{
+char* game_of_life_parallel (char* outboard, char* inboard, const int nrows, 
+                             const int ncols, const int gens_max) {
     /* HINT: in the parallel decomposition, LDA may not be equal to
        nrows! */
-    const int LDA = nrows;
+    const int LDA = ncols;
     int curgen, i, j;
-    int inorth;
-    int isouth;
-    int jwest;
-    int jeast;
-    for (curgen = 0; curgen < gens_max; curgen++)
-    {
+    int inorth, isouth, jwest, jeast;
+    char neighbor_count;
+    for (curgen = 0; curgen < gens_max; curgen++) {
         /* HINT: you'll be parallelizing these loop(s) by doing a
            geometric decomposition of the output */
-        for (i = 0; i < nrows; i++) {
-			inorth = mod (i-1, nrows);
-    		isouth = mod (i+1, nrows);
-			jwest = ncols - 1;
-			jeast = 1;
-			j = 0;
-			char neighbor_count = 
-                    BOARD (inboard, inorth, jwest) + 
-                    BOARD (inboard, inorth, j) + 
-                    BOARD (inboard, inorth, jeast) + 
-                    BOARD (inboard, i, jwest) +
-                    BOARD (inboard, i, jeast) + 
-                    BOARD (inboard, isouth, jwest) +
-                    BOARD (inboard, isouth, j) + 
-                    BOARD (inboard, isouth, jeast);
-			BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
-			
-            for (j = 1; j < ncols; j++) {
-    			jwest = j - 1;
-    			jeast = j + 1;
+        for (j = 0; j < ncols; j++) {
+            jwest = j-1;
+            jeast = j+1;
+            if (j == 0) {
+                jwest = ncols - 1;
+            } else if (j == ncols - 1) {
+                jeast = 0;
+            }
+
+            for (i = 0; i < nrows; i++) {
+                inorth = i-1;
+                isouth = i+1;
+                if (i == 0) {
+                    inorth = nrows - 1;
+                } else if (i == nrows - 1) {
+                    isouth = ncols - 1;
+                }
                 neighbor_count = 
                     BOARD (inboard, inorth, jwest) + 
                     BOARD (inboard, inorth, j) + 
@@ -93,21 +72,8 @@ game_of_life_parallel (char* outboard,
                     BOARD (inboard, isouth, jeast);
 
                 BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
-            }
-			jeast = 0;
-			jwest = ncols - 2;
-			j = ncols - 1;
-            neighbor_count = 
-                    BOARD (inboard, inorth, jwest) + 
-                    BOARD (inboard, inorth, j) + 
-                    BOARD (inboard, inorth, jeast) + 
-                    BOARD (inboard, i, jwest) +
-                    BOARD (inboard, i, jeast) + 
-                    BOARD (inboard, isouth, jwest) +
-                    BOARD (inboard, isouth, j) + 
-                    BOARD (inboard, isouth, jeast);
 
-            BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
+            }
         }
         SWAP_BOARDS( outboard, inboard );
 
@@ -120,3 +86,5 @@ game_of_life_parallel (char* outboard,
      */
     return inboard;
 }
+
+
