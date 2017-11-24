@@ -87,7 +87,8 @@ void* modify_columns(void *arguments) {
                     BOARD (inboard, isouth, j) + 
                     BOARD (inboard, isouth, jeast);
 
-                BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
+                BOARD(outboard, i, j) = ((neighbor_count == (char) 3) && !BOARD(inboard, i, j)) ||
+                                        ((neighbor_count >= 2) && (neighbor_count <= 3) && BOARD(inboard, i, j));
             }
 
             neighbor_count = BOARD (inboard, nrows - 2, jwest) + BOARD (inboard, nrows - 2, j) + BOARD (inboard, nrows - 2, jeast) +  
