@@ -52,8 +52,8 @@ pthread_barrier_t iteration_barrier;
 void* modify_columns(void *arguments) {
     struct ThreadParameters* thread_params = arguments;
     int i, j;
-    int inorth, isouth, jwest, jeast;
-    char neighbor_count;
+    int inorth, isouth, isouth_south,jwest, jeast;
+    char neighbor_count, abv_neighbor_count, blw_neighbor_count;
     const int LDA = thread_params->ncols;
     char* temp;
     char* inboard = thread_params->inboard;
@@ -73,24 +73,55 @@ void* modify_columns(void *arguments) {
                 BOARD (inboard, 0, jwest) + BOARD (inboard, 0, jeast) + BOARD (inboard, 1, jwest) + BOARD (inboard, 1, j) + 
                 BOARD (inboard, 1, jeast);
             BOARD(outboard, 0, j) = alivep (neighbor_count, BOARD (inboard, 0, j));
-
-            for (i = 1; i < nrows - 1; i++) {
+            char ele_abv_0 = BOARD(inboard,0,jwest);
+            char ele_abv_1 = BOARD(inboard,0,j);
+            char ele_abv_2 = BOARD(inboard,0,jeast);
+            char ele_0_0 = BOARD(inboard,1,jwest);
+            char ele_0_1 = BOARD(inboard,1,j);
+            char ele_0_2 = BOARD(inboard,1,jeast);
+            for (i = 1; i < nrows - 2; i+=2) {
                 inorth = i-1;
                 isouth = i+1;
-                neighbor_count = 
-                    BOARD (inboard, inorth, jwest) + 
-                    BOARD (inboard, inorth, j) + 
-                    BOARD (inboard, inorth, jeast) + 
-                    BOARD (inboard, i, jwest) +
-                    BOARD (inboard, i, jeast) + 
-                    BOARD (inboard, isouth, jwest) +
-                    BOARD (inboard, isouth, j) + 
-                    BOARD (inboard, isouth, jeast);
+                isouth_south = i+2;
+                char ele_1_0 = BOARD(inboard,isouth,jwest);
+                char ele_1_1 = BOARD(inboard,isouth,j);
+                char ele_1_2 = BOARD(inboard,isouth,jeast);
+                char ele_blw_0 = BOARD(inboard,isouth_south,jwest);
+                char ele_blw_1 = BOARD(inboard,isouth_south,j);
+                char ele_blw_2 = BOARD(inboard,isouth_south,jeast);
+                abv_neighbor_count = 
+                    ele_abv_0 + 
+                    ele_abv_1 + 
+                    ele_abv_2 + 
+                    ele_0_0 +
+                    ele_0_2 + 
+                    ele_1_0 +
+                    ele_1_1 + 
+                    ele_1_2;
+                blw_neighbor_count = 
+                    ele_0_0 + 
+                    ele_0_1 +
+                    ele_0_2 +
+                    ele_1_0 + 
+                    ele_1_2 +
+                    ele_blw_0 +
+                    ele_blw_1 +
+                    ele_blw_2;
 
-                BOARD(outboard, i, j) = ((neighbor_count == (char) 3) && !BOARD(inboard, i, j)) ||
-                                        ((neighbor_count >= 2) && (neighbor_count <= 3) && BOARD(inboard, i, j));
+                BOARD(outboard, i, j) = ((abv_neighbor_count == (char) 3) && !ele_0_1) ||
+                                        ((abv_neighbor_count >= 2) && (abv_neighbor_count <= 3) && ele_0_1);
+                BOARD(outboard, i+1,j)= ((blw_neighbor_count == (char) 3) && !ele_1_1) ||
+                                        ((blw_neighbor_count >= 2) && (blw_neighbor_count <= 3) && ele_1_1);
+                ele_abv_0 = ele_1_0; ele_abv_1 = ele_1_1; ele_abv_2 = ele_1_2;
+                ele_0_0 = ele_blw_0; ele_0_1 = ele_blw_1; ele_0_2 = ele_blw_2;
             }
-
+            if (i!=nrows-1) {
+                neighbor_count = BOARD(inboard,i-1,jwest) + BOARD(inboard,i-1,j) + BOARD(inboard,i-1,jeast) +
+                    BOARD(inboard,i,jwest) + BOARD(inboard,i,jeast) + BOARD(inboard,i+1,jwest) + BOARD(inboard,i+1,j) + 
+                    BOARD(inboard,i+1,jeast);
+                BOARD(outboard, i, j) = ((neighbor_count == (char) 3) && !BOARD(inboard, i, j)) ||
+                                        ((neighbor_count >= 2) && (neighbor_count <= 3) && BOARD(inboard, i, j)); 
+            }
             neighbor_count = BOARD (inboard, nrows - 2, jwest) + BOARD (inboard, nrows - 2, j) + BOARD (inboard, nrows - 2, jeast) +  
                 BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, jeast) + BOARD (inboard, 0, jwest) + BOARD (inboard, 0, j) + 
                 BOARD (inboard, 0, jeast);
