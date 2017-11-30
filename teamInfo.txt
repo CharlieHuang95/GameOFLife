@@ -1,0 +1,7 @@
+teamName: uintptr*
+student1_fullName: Lei, Mei siu
+student1_studentNumber: 1000302718
+student1_email: michelle.lei@mail.utoronto.ca
+student2_fullName: Haoen Huang
+student2_studentNumber: 1000738570
+student2_email: haoen.huang@mail.utoronto.ca
