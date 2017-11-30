@@ -14,7 +14,7 @@
 } while(0)
 
 #define BOARD( __board, __i, __j )  (__board[(__i) + LDA*(__j)])
-#define NUM_THREADS 16
+#define NUM_THREADS 8
 #define DEBUG 0
 
 /*****************************************************************************
@@ -49,19 +49,27 @@ struct ThreadParameters {
 
 pthread_barrier_t iteration_barrier;
 
+inline char board_sum(char* board, int i, int jwest, int j, int jeast) {
+    return board[j + i - 1] + board[j + i + 1] +
+           board[jwest + i - 1] + board[jwest + i] + board[jwest + i + 1] +
+           board[jeast + i - 1] + board[jeast + i] + board[jeast + i + 1];
+}
+
 void* modify_columns(void *arguments) {
     struct ThreadParameters* thread_params = arguments;
     int i, j;
     int inorth, isouth, jwest, jeast;
-    char neighbor_count;
-    const int LDA = thread_params->ncols;
+    int neighbor_count;
+    int LDA = thread_params->ncols;
     char* temp;
     char* inboard = thread_params->inboard;
     char* outboard = thread_params->outboard;
     const int ncols = thread_params->ncols;
     const int nrows = thread_params->nrows;
+    const int start = thread_params->start;
+    const int end = thread_params->end;
     for (int iter = 0; iter < thread_params->num_iterations; iter++) {
-        for (j = thread_params->start; j < thread_params->end; j++) {
+        for (j = start; j < end; j++) {
             jwest = j-1;
             jeast = j+1;
             if (j == 0) { jwest = ncols - 1; }
@@ -72,12 +80,12 @@ void* modify_columns(void *arguments) {
             neighbor_count = BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, j) + BOARD (inboard, nrows - 1, jeast) +  
                 BOARD (inboard, 0, jwest) + BOARD (inboard, 0, jeast) + BOARD (inboard, 1, jwest) + BOARD (inboard, 1, j) + 
                 BOARD (inboard, 1, jeast);
-            BOARD(outboard, 0, j) = alivep (neighbor_count, BOARD (inboard, 0, j));
-
+            BOARD(outboard, 0, j) = (neighbor_count == 3) || (neighbor_count == 2 && BOARD (inboard, 0, j));
+            int offset = jwest * ncols;
             for (i = 1; i < nrows - 1; i++) {
-                inorth = i-1;
-                isouth = i+1;
-                neighbor_count = 
+//                inorth = i-1;
+//                isouth = i+1;
+/*                neighbor_count = 
                     BOARD (inboard, inorth, jwest) + 
                     BOARD (inboard, inorth, j) + 
                     BOARD (inboard, inorth, jeast) + 
@@ -86,15 +94,17 @@ void* modify_columns(void *arguments) {
                     BOARD (inboard, isouth, jwest) +
                     BOARD (inboard, isouth, j) + 
                     BOARD (inboard, isouth, jeast);
-
-                BOARD(outboard, i, j) = ((neighbor_count == (char) 3) && !BOARD(inboard, i, j)) ||
-                                        ((neighbor_count >= 2) && (neighbor_count <= 3) && BOARD(inboard, i, j));
+*/                neighbor_count = (inboard[offset] + inboard[jwest*ncols + i] + inboard[jwest*ncols + i + 1]) +
+                                   (inboard[j*ncols + i - 1] + inboard[j*ncols + i + 1]) +
+                                   (inboard[jeast*ncols + i - 1] + inboard[jeast*ncols + i] + inboard[jeast*ncols + i + 1]);
+                //board_sum(inboard, i, jwest * ncols, j * ncols, jeast * ncols);
+                outboard[ncols * j + i] = neighbor_count == 3 || (neighbor_count == 2 && inboard[ncols * j + i]); 
             }
 
             neighbor_count = BOARD (inboard, nrows - 2, jwest) + BOARD (inboard, nrows - 2, j) + BOARD (inboard, nrows - 2, jeast) +  
                 BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, jeast) + BOARD (inboard, 0, jwest) + BOARD (inboard, 0, j) + 
                 BOARD (inboard, 0, jeast);
-            BOARD(outboard, nrows - 1, j) = alivep (neighbor_count, BOARD (inboard, nrows - 1, j));
+            BOARD(outboard, nrows - 1, j) = (neighbor_count == 3) || (neighbor_count == 2 && BOARD (inboard, nrows - 1, j));
 
         }
         if (DEBUG) {
