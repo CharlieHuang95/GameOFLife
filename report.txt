@@ -1,0 +1,10 @@
+teamName: Game of Pi
+student1_fullName: Haoen Huang
+student2_fullName: Lei, Mei Siu
+
+We added a new function called "game_of_life_parallel". This function creates multiple threads (depending on value of macro NUM_THREADS). Each thread is assign a region of the image to operate upon. Since the array is stored in column order (we swapped the traversal to make use of cache locality), we split the columns up into blocks and passed them in as parameters to each thread to operate on. We used barriers to synchronize these threads in order to avoid running separate time-step iterations simultaneously which would lead to errors.
+
+Inside the "modify_columns" function:
+ - We created local variables to store the passed-in parameters. This might not be necessary due to the choice of optimization level, but it is better safe than sorry. 
+ - We changed alive_p function by modifying the logic by writing out a Karnaugh Map to determine the least amount of logic required.
+ - We removed the mod macro because it is very expensive (does a comparison as well as a mod). The reason a mod is required is because there are edges cases when we on the first row/column and last row/column. The board essentially wraps around. We were able to account for this by moving these two edge cases outside of the loop.
