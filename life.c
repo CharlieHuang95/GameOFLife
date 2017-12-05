@@ -13,7 +13,6 @@
   b2 = temp; \
 } while(0)
 
-#define BOARD( __board, __i, __j )  (__board[(__i) + LDA*(__j)])
 #define NUM_THREADS 8
 #define DEBUG 0
 
@@ -74,8 +73,6 @@ void* modify_columns(void *arguments) {
             jeast = j+1;
             if (j == 0) { jwest = ncols - 1; }
             else if (j == ncols - 1) { jeast = 0; }
-
-            // inorth = nrows - 1, i = 0, isouth = 1
             
             neighbor_count = BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, j) + BOARD (inboard, nrows - 1, jeast) +  
                 BOARD (inboard, 0, jwest) + BOARD (inboard, 0, jeast) + BOARD (inboard, 1, jwest) + BOARD (inboard, 1, j) + 
@@ -83,18 +80,7 @@ void* modify_columns(void *arguments) {
             BOARD(outboard, 0, j) = (neighbor_count == 3) || (neighbor_count == 2 && BOARD (inboard, 0, j));
             int offset = jwest * ncols;
             for (i = 1; i < nrows - 1; i++) {
-//                inorth = i-1;
-//                isouth = i+1;
-/*                neighbor_count = 
-                    BOARD (inboard, inorth, jwest) + 
-                    BOARD (inboard, inorth, j) + 
-                    BOARD (inboard, inorth, jeast) + 
-                    BOARD (inboard, i, jwest) +
-                    BOARD (inboard, i, jeast) + 
-                    BOARD (inboard, isouth, jwest) +
-                    BOARD (inboard, isouth, j) + 
-                    BOARD (inboard, isouth, jeast);
-*/                neighbor_count = (inboard[jwest*ncols + i - 1] + inboard[jwest*ncols + i] + inboard[jwest*ncols + i + 1]) +
+                neighbor_count = (inboard[jwest*ncols + i - 1] + inboard[jwest*ncols + i] + inboard[jwest*ncols + i + 1]) +
                                    (inboard[j*ncols + i - 1] + inboard[j*ncols + i + 1]) +
                                    (inboard[jeast*ncols + i - 1] + inboard[jeast*ncols + i] + inboard[jeast*ncols + i + 1]);
                 //board_sum(inboard, i, jwest * ncols, j * ncols, jeast * ncols);
@@ -107,9 +93,6 @@ void* modify_columns(void *arguments) {
             BOARD(outboard, nrows - 1, j) = (neighbor_count == 3) || (neighbor_count == 2 && BOARD (inboard, nrows - 1, j));
 
         }
-        if (DEBUG) {
-            printf("Wait\n");
-        }
         temp = inboard;
         inboard = outboard;
         outboard = temp;
@@ -120,11 +103,6 @@ void* modify_columns(void *arguments) {
 
 char* game_of_life_parallel (char* outboard, char* inboard, const int nrows, 
                              const int ncols, const int gens_max) {
-    /* HINT: in the parallel decomposition, LDA may not be equal to
-       nrows! */
-    if (DEBUG) {
-        printf("START\n");
-    }
     struct ThreadParameters thread_params[NUM_THREADS];
     pthread_t tids[NUM_THREADS];
     pthread_barrier_init(&iteration_barrier, NULL, NUM_THREADS);
