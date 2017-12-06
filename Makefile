@@ -3,7 +3,7 @@
 #
 include Makefile.include
 
-LDFLAGS += -lm -lpthread 
+LDFLAGS += -lm -pthread 
 CPPFLAGS += "-DCOMPILER=\"$(CC)\"" "-DFLAGS=\"$(COPTFLAGS)\""
 
 #
