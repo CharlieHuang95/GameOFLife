@@ -94,8 +94,6 @@ void* modify_columns(void *arguments) {
             jeast = j+1;
             if (j == 0) { jwest = ncols - 1; }
             else if (j == ncols - 1) { jeast = 0; }
-
-            // inorth = nrows - 1, i = 0, isouth = 1
             
             neighbor_count = BOARD (inboard, nrows - 1, jwest) + BOARD (inboard, nrows - 1, j) + BOARD (inboard, nrows - 1, jeast) +  
                 BOARD (inboard, 0, jwest) + BOARD (inboard, 0, jeast) + BOARD (inboard, 1, jwest) + BOARD (inboard, 1, j) + 
